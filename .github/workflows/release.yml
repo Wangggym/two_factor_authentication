@@ -1,16 +1,20 @@
 name: Release
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types:
-      - completed
-        
+  workflow_call:
+    inputs:
+      ref:
+        required: false
+        type: string
+        default: ''
+      is_release:
+        required: true
+        type: boolean
+        description: "Whether this is a release build"
+
 jobs:
   release:
-    if: |
-      github.event.workflow_run.conclusion == 'success' && 
-      contains(github.event.workflow_run.head_branch, 'refs/tags/v')
+    if: inputs.is_release
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -23,6 +27,8 @@ jobs:
     
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
       
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -30,13 +36,6 @@ jobs:
           flutter-version: '3.24.1'
           channel: 'stable'
           cache: true
-      
-      - name: Cache pub dependencies
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.PUB_CACHE }}
-          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
-          restore-keys: ${{ runner.os }}-pub-
       
       - name: Install dependencies
         run: flutter pub get

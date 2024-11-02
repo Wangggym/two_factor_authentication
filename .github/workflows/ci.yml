@@ -118,6 +118,15 @@ jobs:
 
   verify:
     needs: test
+    if: github.event_name == 'pull_request'
     uses: ./.github/workflows/verify-builds.yml
     with:
       ref: ${{ github.ref }}
+
+  release:
+    needs: test
+    if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master') && github.event_name == 'push'
+    uses: ./.github/workflows/release.yml
+    with:
+      ref: ${{ github.ref }}
+      is_release: ${{ startsWith(github.ref, 'refs/tags/v') }}
